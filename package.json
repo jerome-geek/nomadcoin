@@ -5,5 +5,8 @@
   "main": "src/server.js",
   "repository": "https://github.com/jerome-spin/nomadcoin.git",
   "author": "Jerome <jerome@spinprotocol.io>",
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "cryptojs": "^2.5.3"
+  }
 }
