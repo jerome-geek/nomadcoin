@@ -10,9 +10,11 @@
     "body-parser": "^1.19.0",
     "crypto-js": "^3.1.9-1",
     "express": "^4.17.0",
-    "morgan": "^1.9.1"
+    "morgan": "^1.9.1",
+    "ws": "^7.0.0"
   },
   "scripts": {
-    "dev": "nodemon src/server.js"
+    "dev": "nodemon src/server.js",
+    "dev4000": "export HTTP_PORT=4000 && nodemon src/server.js"
   }
 }
