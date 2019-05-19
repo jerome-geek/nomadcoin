@@ -1,4 +1,4 @@
-const CryptoJS = require('cryptojs');
+const CryptoJS = require('crypto-js');
 
 class Block {
   constructor(index, hash, previousHash, timestamp, data) {
@@ -59,7 +59,7 @@ const isNewBlockValid = (candidateBlock, latestBlock) => {
   if (!isNewStructureValid(candidateBlock)) {
     console.log('The candidate block structure is not valid');
     return false;
-  } else if (latestBlock.index + 1 !== candidateBlock) {
+  } else if (latestBlock.index + 1 !== candidateBlock.index) {
     console.log('The candidate block does not have a valid index');
     return false;
   } else if (latestBlock.hash !== candidateBlock.previousHash) {
