@@ -23,6 +23,15 @@ const initSocketConnection = socket => {
   }, 5000);
 };
 
+const handleSocketError = ws => {
+  const closeSocketConnection = ws => {
+    ws.close();
+    sockets.splice(sockets.indexOf(ws), 1);
+  };
+  ws.on('close', () => closeSocketConnection(ws));
+  ws.on('error', () => closeSocketConnection(ws));
+};
+
 const connectToPeers = newPeer => {
   const ws = new WebSockets(newPeer);
   ws.on('open', () => {
