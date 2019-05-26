@@ -1,12 +1,15 @@
-const CryptoJS = require('crypto-js');
+const CryptoJS = require('crypto-js'),
+  hexToBinary = require('hex-to-binary');
 
 class Block {
-  constructor(index, hash, previousHash, timestamp, data) {
+  constructor(index, hash, previousHash, timestamp, data, difficulty, nonce) {
     this.index = index;
     this.hash = hash;
     this.previousHash = previousHash;
     this.timestamp = timestamp;
     this.data = data;
+    this.difficulty = difficulty;
+    this.nonce = nonce;
   }
 }
 
@@ -15,7 +18,9 @@ const genesisBlock = new Block(
   '29B1A40E130E6DBDA288A538C8E99BAC1990452A60E2337D5E4A7FE52A5B7CAF',
   null,
   1558020374634,
-  'This is the genesis'
+  'This is the genesis',
+  0,
+  0
 );
 
 let blockchain = [genesisBlock];
@@ -26,31 +31,59 @@ const getTimestamp = () => new Date().getTime() / 1000;
 
 const getBlockchain = () => blockchain;
 
-const createHash = (index, previousHash, timestamp, data) =>
+const createHash = (index, previousHash, timestamp, data, difficulty, nonce) =>
   CryptoJS.SHA256(
-    index + previousHash + timestamp + JSON.stringify(data)
+    index + previousHash + timestamp + JSON.stringify(data) + difficulty + nonce
   ).toString();
 
 const createNewBlock = data => {
   const previousBlock = getNewestBlock();
   const newBlockIndex = previousBlock.index + 1;
   const newTimeStamp = getTimestamp();
-  const newHash = createHash(
+  const newBlock = findBlock(
     newBlockIndex,
     previousBlock.hash,
     newTimeStamp,
-    data
-  );
-  const newBlock = new Block(
-    newBlockIndex,
-    newHash,
-    previousBlock.hash,
-    newTimeStamp,
-    data
+    data,
+    10
   );
   addBlockToChain(newBlock);
   require('./p2p').broadcastNewBlock();
   return newBlock;
+};
+
+const findBlock = (index, previousHash, timestamp, data, difficulty) => {
+  let nonce = 0;
+  while (true) {
+    console.log(`Current nonce: ${nonce}`);
+    const hash = createHash(
+      index,
+      previousHash,
+      timestamp,
+      data,
+      difficulty,
+      nonce
+    );
+    if (hashMatchesDifficulty(hash, difficulty)) {
+      return new Block(
+        index,
+        hash,
+        previousHash,
+        timestamp,
+        data,
+        difficulty,
+        nonce
+      );
+    }
+    nonce++;
+  }
+};
+
+const hashMatchesDifficulty = (hash, difficulty) => {
+  const hashInBinary = hexToBinary(hash);
+  const requiredZeros = '0'.repeat(difficulty);
+  console.log(`Trying difficulty: ${difficulty} with hash ${hashInBinary}`);
+  return hashInBinary.startsWith(requiredZeros);
 };
 
 const getBlocksHash = ({ index, previousHash, timestamp, data }) =>
