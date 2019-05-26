@@ -1,6 +1,10 @@
 const CryptoJS = require('crypto-js'),
   hexToBinary = require('hex-to-binary');
 
+// BLOCK_GENERATION_INTERVAL time is seconds
+const BLOCK_GENERATION_INTERVAL = 10;
+const DIFFICULTY_ADJUSTMENT_INTERVAL = 10;
+
 class Block {
   constructor(index, hash, previousHash, timestamp, data, difficulty, nonce) {
     this.index = index;
@@ -40,16 +44,44 @@ const createNewBlock = data => {
   const previousBlock = getNewestBlock();
   const newBlockIndex = previousBlock.index + 1;
   const newTimeStamp = getTimestamp();
+  const difficulty = findDifficulty();
   const newBlock = findBlock(
     newBlockIndex,
     previousBlock.hash,
     newTimeStamp,
     data,
-    10
+    difficulty
   );
   addBlockToChain(newBlock);
   require('./p2p').broadcastNewBlock();
   return newBlock;
+};
+
+const findDifficulty = () => {
+  const newestBlock = getNewestBlock();
+  if (
+    newestBlock.index % DIFFICULTY_ADJUSTMENT_INTERVAL === 0 &&
+    newestBlock.index !== 0
+  ) {
+    return calculateNewDifficulty(newestBlock, getBlockchain());
+  } else {
+    return newestBlock.difficulty;
+  }
+};
+
+const calculateNewDifficulty = (newestBlock, blockchain) => {
+  const lastCalculateBlock =
+    blockchain[blockchain.length - DIFFICULTY_ADJUSTMENT_INTERVAL];
+  const timeExpected =
+    BLOCK_GENERATION_INTERVAL * DIFFICULTY_ADJUSTMENT_INTERVAL;
+  const timeTaken = newestBlock.timestamp - lastCalculateBlock.timestamp;
+  if (timeTaken < timeExpected / 2) {
+    return lastCalculateBlock.difficulty + 1;
+  } else if (timeTaken > timeExpected * 2) {
+    return lastCalculateBlock.difficulty - 1;
+  } else {
+    return lastCalculateBlock.difficulty;
+  }
 };
 
 const findBlock = (index, previousHash, timestamp, data, difficulty) => {
@@ -86,8 +118,14 @@ const hashMatchesDifficulty = (hash, difficulty) => {
   return hashInBinary.startsWith(requiredZeros);
 };
 
-const getBlocksHash = ({ index, previousHash, timestamp, data }) =>
-  createHash(index, previousHash, timestamp, data);
+const getBlocksHash = ({
+  index,
+  previousHash,
+  timestamp,
+  data,
+  difficulty,
+  nonce,
+}) => createHash(index, previousHash, timestamp, data, difficulty, nonce);
 
 const isBlockValid = (candidateBlock, latestBlock) => {
   if (!isBlockStructureValid(candidateBlock)) {
